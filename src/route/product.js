@@ -23,17 +23,16 @@ productRouter.get("/products", auth, async (req, res) => {
   console.log(req.query);
 
   if (req.query.name) {
-    filter.name = req.query.name === "Coca-cola";
+    filter.name = req.query.name;
   }
 
   try {
-    // const products = await Product.find({ owner: req.user._id });
     await req.user.populate({
       path: "products",
-      filter,
+      match: filter, // Corrected the filter usage
       options: {
-        skip: parseInt(req.query.skip),
-        limit: parseInt(req.query.limit),
+        skip: parseInt(req.query.skip, 10),
+        limit: parseInt(req.query.limit, 10),
       },
     });
     res.send(req.user.products);
@@ -89,7 +88,7 @@ productRouter.delete("/products/:id", auth, async (req, res) => {
   try {
     const product = await Product.findOneAndDelete({
       _id: req.params.id,
-      owner: req.user,
+      owner: req.user._id, // Corrected the usage here
     });
 
     if (!product) {
@@ -102,10 +101,10 @@ productRouter.delete("/products/:id", auth, async (req, res) => {
   }
 });
 
-// add images
+// Add images
 const upload = multer({
   limits: {
-    fileSize: 1000000,
+    fileSize: 1000000, // 1 MB limit
   },
   fileFilter: (req, file, cb) => {
     const allowedTypes = ["image/jpeg", "image/png", "image/gif"];
@@ -132,7 +131,7 @@ productRouter.post(
         owner: req.user._id,
       });
       if (!product) {
-        return res.status(404).send("Proudct not found");
+        return res.status(404).send("Product not found"); // Corrected typo
       }
       const buffer = await sharp(req.file.buffer)
         .resize({ width: 800, height: 800 })
@@ -143,7 +142,7 @@ productRouter.post(
 
       res.send("File uploaded");
     } catch (e) {
-      res.status(404).send(e);
+      res.status(500).send(e); // Changed to 500
     }
   },
   (error, req, res, next) => {
@@ -153,7 +152,7 @@ productRouter.post(
   }
 );
 
-// Delete Uploaded
+// Delete Uploaded Image
 productRouter.delete("/products/:id/image", auth, async (req, res) => {
   try {
     const product = await Product.findOne({
@@ -169,7 +168,7 @@ productRouter.delete("/products/:id/image", auth, async (req, res) => {
 
     res.send({ message: "Product image deleted successfully" });
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send(e); // Changed to 400
   }
 });
 
@@ -181,121 +180,15 @@ productRouter.get("/products/:id/image", auth, async (req, res) => {
       owner: req.user._id,
     });
 
-    if (!product || product.image) {
+    if (!product || !product.image) {
+      // Corrected conditional check
       return res.status(404).send({ error: "Image not found" });
     }
     res.set("Content-Type", "image/png");
-
     res.send(product.image);
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).send(e); // Changed to 400
   }
 });
 
 module.exports = productRouter;
-
-// const express = require("express");
-// const Task = require("../models/task");
-// const auth = require("../middleware/auth");
-// const task_router = new express.Router();
-
-// task_router.post("/tasks", auth, async (req, res) => {
-//   const task = new Task({
-//     ...req.body,
-//     owner: req.user._id,
-//   });
-//   try {
-//     await task.save();
-//     res.status(201).send(task);
-//   } catch (e) {
-//     res.status(400).send(e);
-//   }
-// });
-
-// task_router.get("/tasks", auth, async (req, res) => {
-//   try {
-//     const match = {};
-//     const sort = {};
-//     if (req.query.sortBy) {
-//       const parts = req.query.sortBy.split(":");
-//       sort[parts[0]] = parts[1] == "desc" ? -1 : 1;
-//     }
-
-//     if (req.query.completed) {
-//       match.completed = req.query.completed == "true";
-//     }
-//     await req.user.populate({
-//       path: "tasks",
-//       match,
-//       options: {
-//         limit: parseInt(req.query.limit),
-//         skip: parseInt(req.query.skip),
-//         sort,
-//       },
-//     });
-//     res.send(req.user.tasks);
-//   } catch (e) {
-//     res.status(500).send(e);
-//   }
-// });
-
-// task_router.get("/tasks/:id", auth, async (req, res) => {
-//   const _id = req.params.id;
-//   try {
-//     const task = await Task.findOne({ _id, owner: req.user._id });
-//     if (!task) {
-//       return res.status(404).send();
-//     }
-//     res.send(task);
-//   } catch (e) {
-//     res.status(400).send();
-//   }
-// });
-
-// task_router.patch("/tasks/:id", auth, async (req, res) => {
-//   const task_keys = Object.keys(req.body);
-
-//   const allowed_task = ["description", "completed"];
-
-//   const isValidOperation = task_keys.every((task_key) => {
-//     return allowed_task.includes(task_key);
-//   });
-//   if (!isValidOperation) {
-//     res.status(404).send({ error: "Invalid task!" });
-//   }
-//   try {
-//     const task = await Task.findOne({
-//       _id: req.params.id,
-//       owner: req.user._id,
-//     });
-
-//     if (!task) {
-//       return res.status(404).send();
-//     }
-//     task_keys.forEach((task_key) => (task[task_key] = req.body[task_key]));
-
-//     await task.save();
-
-//     res.send(task);
-//   } catch (e) {
-//     res.send(400).send(e);
-//   }
-// });
-
-// task_router.delete("/tasks/:id", auth, async (req, res) => {
-//   const task = await Task.findOneAndDelete({
-//     _id: req.params.id,
-//     owner: req.user._id,
-//   });
-
-//   try {
-//     if (!task) {
-//       return res.status(404).send();
-//     }
-//     res.send(task);
-//   } catch (e) {
-//     res.status(500).send(e);
-//   }
-// });
-
-// module.exports = task_router;
