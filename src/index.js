@@ -5,7 +5,7 @@ const productRouter = require("./route/product");
 const userRouter = require("./route/user");
 const cors = require("cors");
 const app = express();
-const port = process.env.PORT || 3000; // Set port from environment variable or default to 3000
+const port = process.env.PORT || 3000;
 
 // Middleware
 app.use(express.json());

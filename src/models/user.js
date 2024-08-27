@@ -17,7 +17,7 @@ const userSchema = new mongoose.Schema(
       unique: true,
       validate: (value) => {
         if (!validator.isEmail(value)) {
-          console.log("Invalid email address");
+          throw new Error("Invalid email address");
         }
       },
     },
@@ -72,10 +72,11 @@ userSchema.statics.findByCredentials = async function (email, password) {
   }
   const isMatch = await bcrypt.compare(password, user.password);
   if (!isMatch) {
-    throw new Error("Invalid Credentials.Incorrect password");
+    throw new Error("Invalid credentials. Incorrect password.");
   }
   return user;
 };
+
 // Remove password and token
 userSchema.methods.toJSON = function () {
   const user = this;

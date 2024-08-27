@@ -6,15 +6,19 @@ const userRouter = express.Router();
 
 // Create User
 userRouter.post("/users", async (req, res) => {
+  console.log("Incoming request body:", req.body);
   try {
     const { name, email, password } = req.body;
     const user = new User({ name, email, password });
-    await user.save();
+
     const token = await user.generateAuthToken();
 
-    res.status(201).send({ user, token });
+    await user.save();
+    console.log(user);
+
+    res.status(201).json({ user, token });
   } catch (e) {
-    res.status(500).send(e);
+    res.status(500).json(e);
   }
 });
 
@@ -26,9 +30,10 @@ userRouter.post("/users/login", async (req, res) => {
       req.body.password
     );
     const token = await user.generateAuthToken();
-    res.send({ user, token });
-  } catch (e) {
-    res.status(400).send(e);
+    res.json({ user, token });
+    console.log(user);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
   }
 });
 
@@ -41,15 +46,15 @@ userRouter.post("/users/logout", auth, async (req, res) => {
 
     await req.user.save();
 
-    res.status(200).send({ message: "Logout successful" });
+    res.status(200).json({ message: "Logout successful" });
   } catch (e) {
-    res.status(500).send({ error: "Logout failed" });
+    res.status(500).json({ error: "Logout failed" });
   }
 });
 
 // Read all Users
 userRouter.get("/users/me", auth, async (req, res) => {
-  res.send(req.user);
+  res.json(req.user);
 });
 
 // Update User
@@ -61,26 +66,26 @@ userRouter.patch("/users/me", auth, async (req, res) => {
   );
 
   if (!isValidOperation) {
-    return res.status(400).send({ error: "Invalid updates!" });
+    return res.status(400).json({ error: "Invalid updates!" });
   }
 
   try {
     updates.forEach((update) => (req.user[update] = req.body[update]));
     await req.user.save();
 
-    res.send(req.user);
+    res.json(req.user); //
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).json(e);
   }
 });
 
 // Delete User
 userRouter.delete("/users/me", auth, async (req, res) => {
   try {
-    await User.deleteOne({ _id: req.user._id }); // Corrected to use req.user._id
-    res.send({ message: "User deleted successfully." });
+    await User.deleteOne({ _id: req.user._id });
+    res.json({ message: "User deleted successfully." });
   } catch (e) {
-    res.status(400).send(e);
+    res.status(400).json(e);
   }
 });
 

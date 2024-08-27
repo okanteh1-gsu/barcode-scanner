@@ -11,16 +11,15 @@ productRouter.post("/products", auth, async (req, res) => {
   const product = new Product({ ...req.body, owner: req.user._id });
   try {
     await product.save();
-    res.status(201).send(product);
+    res.status(201).json(product);
   } catch (e) {
-    res.status(500).send(e);
+    res.status(500).json(e);
   }
 });
 
 // Read all products
 productRouter.get("/products", auth, async (req, res) => {
   const filter = {};
-  console.log(req.query);
 
   if (req.query.name) {
     filter.name = req.query.name;
@@ -29,15 +28,15 @@ productRouter.get("/products", auth, async (req, res) => {
   try {
     await req.user.populate({
       path: "products",
-      match: filter, // Corrected the filter usage
+      match: filter,
       options: {
         skip: parseInt(req.query.skip, 10),
         limit: parseInt(req.query.limit, 10),
       },
     });
-    res.send(req.user.products);
+    res.json(req.user.products);
   } catch (e) {
-    res.status(500).send(e);
+    res.status(500).json(e);
   }
 });
 
@@ -49,11 +48,11 @@ productRouter.get("/products/:barcode", auth, async (req, res) => {
       owner: req.user._id,
     });
     if (!product) {
-      return res.status(404).send("Product Not Found.");
+      return res.status(404).json("Product Not Found.");
     }
-    res.send(product);
+    res.json(product);
   } catch (e) {
-    res.status(500).send(e);
+    res.status(500).json(e);
   }
 });
 
@@ -64,7 +63,7 @@ productRouter.patch("/products/:id", auth, async (req, res) => {
   const isValidOperation = objKeys.every((key) => allowedUpdates.includes(key));
 
   if (!isValidOperation) {
-    return res.status(400).send("Invalid Operation.");
+    return res.status(400).json("Invalid Operation.");
   }
   try {
     const product = await Product.findOne({
@@ -72,14 +71,14 @@ productRouter.patch("/products/:id", auth, async (req, res) => {
       owner: req.user._id,
     });
     if (!product) {
-      return res.status(404).send("Product not found");
+      return res.status(404).json("Product not found");
     }
     objKeys.forEach((key) => (product[key] = req.body[key]));
     await product.save();
 
-    res.send(product);
+    res.json(product);
   } catch (e) {
-    res.status(500).send(e);
+    res.status(500).json(e);
   }
 });
 
@@ -88,16 +87,16 @@ productRouter.delete("/products/:id", auth, async (req, res) => {
   try {
     const product = await Product.findOneAndDelete({
       _id: req.params.id,
-      owner: req.user._id, // Corrected the usage here
+      owner: req.user._id,
     });
 
     if (!product) {
-      return res.status(404).send("Product not found");
+      return res.status(404).json("Product not found");
     }
 
-    res.send(product);
+    res.json(product);
   } catch (e) {
-    res.status(500).send(e);
+    res.status(500).json(e);
   }
 });
 
@@ -131,7 +130,7 @@ productRouter.post(
         owner: req.user._id,
       });
       if (!product) {
-        return res.status(404).send("Product not found"); // Corrected typo
+        return res.status(404).json("Product not found");
       }
       const buffer = await sharp(req.file.buffer)
         .resize({ width: 800, height: 800 })
@@ -140,14 +139,14 @@ productRouter.post(
       product.image = buffer;
       await product.save();
 
-      res.send("File uploaded");
+      res.json("File uploaded");
     } catch (e) {
-      res.status(500).send(e); // Changed to 500
+      res.status(500).json(e);
     }
   },
   (error, req, res, next) => {
     if (error) {
-      return res.status(400).send({ error: error.message });
+      return res.status(400).json({ error: error.message });
     }
   }
 );
@@ -161,14 +160,14 @@ productRouter.delete("/products/:id/image", auth, async (req, res) => {
     });
 
     if (!product) {
-      return res.status(404).send({ error: "Product not found" });
+      return res.status(404).json({ error: "Product not found" });
     }
     product.image = undefined;
     await product.save();
 
-    res.send({ message: "Product image deleted successfully" });
+    res.json({ message: "Product image deleted successfully" });
   } catch (e) {
-    res.status(400).send(e); // Changed to 400
+    res.status(400).json(e);
   }
 });
 
@@ -181,13 +180,12 @@ productRouter.get("/products/:id/image", auth, async (req, res) => {
     });
 
     if (!product || !product.image) {
-      // Corrected conditional check
-      return res.status(404).send({ error: "Image not found" });
+      return res.status(404).json({ error: "Image not found" });
     }
     res.set("Content-Type", "image/png");
     res.send(product.image);
   } catch (e) {
-    res.status(400).send(e); // Changed to 400
+    res.status(400).json(e);
   }
 });
 
